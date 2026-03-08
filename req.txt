@@ -1,0 +1,12 @@
+uvicorn 
+pydantic
+pydantic[email]
+fastapi
+numpy 
+pandas
+
+sqlalchemy
+asyncpg
+python-multipart
+
+
