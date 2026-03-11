@@ -5,6 +5,7 @@ from routes.assets_endpoints import router as asset_router
 from routes.master_endpoints import router as master_router
 from routes.allocation_endpoints import router as allocation_router
 from routes.auth_endpoints import router as auth_router
+from routes.notification_endpoints import router as notification_router
 
 import sys
 print(sys.path) 
@@ -35,7 +36,7 @@ app.include_router(asset_router, tags=["Assets"])
 app.include_router(master_router)
 app.include_router(allocation_router, tags=["Allocations"])
 app.include_router(auth_router)
-
+app.include_router(notification_router, tags=["Notifications"])
 
 @app.get("/")
 async def root():

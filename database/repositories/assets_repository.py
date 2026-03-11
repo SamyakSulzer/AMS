@@ -5,6 +5,11 @@ from datetime import datetime, timezone
 from database.mappers.assets_map import Asset
 from sqlalchemy import select, func
 
+from sqlalchemy.exc import IntegrityError, DataError, OperationalError, ProgrammingError
+from datetime import datetime, timezone
+
+
+
 
 class AssetRepository:
     def __init__(self, session: AsyncSession):
@@ -35,6 +40,7 @@ class AssetRepository:
         result = await self.session.execute(query)
         return result.scalar() or 0 
 
+    
     async def add_asset(
         self,
         asset_type: str,
@@ -58,7 +64,7 @@ class AssetRepository:
         is_deleted: bool = False,
         staging_status: str | None = 'not_staged',
         status: str | None = 'In-Stock',
-    ) -> Asset:
+    ) -> "Asset":
         now = datetime.now(timezone.utc)
         asset = Asset(
             asset_type=asset_type,
@@ -85,10 +91,24 @@ class AssetRepository:
             staging_status=staging_status,
             status=status,
         )
-        self.session.add(asset)
-        await self.session.commit()
-        await self.session.refresh(asset)
-        return asset
+
+        try:
+            self.session.add(asset)
+            # This will attempt the INSERT; any constraint violations will surface here.
+            await self.session.commit()
+            await self.session.refresh(asset)
+            return asset
+
+        except (IntegrityError, DataError, OperationalError, ProgrammingError) as e:
+            # IMPORTANT: reset the session so next rows can continue
+            await self.session.rollback()
+            # Optional: re-raise or wrap with your domain error
+            raise
+
+        except Exception:
+            await self.session.rollback()
+            raise
+
 
     async def get_asset_by_host_name(self, host_name: str) -> Asset | None:
         result = await self.session.execute(
@@ -170,3 +190,69 @@ class AssetRepository:
             await self.session.commit()
             await self.session.refresh(asset)
         return asset
+    async def count_incomplete_assets(self, user_name: str) -> int:
+        from sqlalchemy import or_
+        query = select(func.count()).select_from(Asset).where(
+            or_(Asset.created_by == user_name, Asset.modified_by == user_name)
+        ).where(
+            or_(
+                Asset.host_name.is_(None), Asset.host_name == "",
+                Asset.make.is_(None), Asset.make == "",
+                Asset.model.is_(None), Asset.model == "",
+                Asset.location.is_(None), Asset.location == ""
+            )
+        )
+        result = await self.session.execute(query)
+        return result.scalar() or 0
+
+    async def get_incomplete_assets_uuids(self, user_name: str) -> list[str]:
+        from sqlalchemy import or_
+        query = select(Asset.u_uid).select_from(Asset).where(
+            or_(Asset.created_by == user_name, Asset.modified_by == user_name)
+        ).where(
+            or_(
+                Asset.host_name.is_(None), Asset.host_name == "",
+                Asset.make.is_(None), Asset.make == "",
+                Asset.model.is_(None), Asset.model == "",
+                Asset.location.is_(None), Asset.location == ""
+            )
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def get_asset_summary_by_category(self) -> list[dict]:
+        from sqlalchemy import case
+        
+        # Group by asset_type and count by status using CASE statements
+        query = select(
+            Asset.asset_type,
+            func.sum(case((Asset.status.ilike('In-Stock'), 1), else_=0)).label('in_stock'),
+            func.sum(case((Asset.status.ilike('Allocated'), 1), else_=0)).label('allocated'),
+            func.sum(case((Asset.status.ilike('Retired'), 1), else_=0)).label('retired'),
+            func.count().label('total')
+        ).group_by(Asset.asset_type)
+        
+        result = await self.session.execute(query)
+        summary = []
+        for row in result.all():
+            asset_type, in_stock, allocated, retired, total = row
+            # Ensure None values from SUM(CASE) are treated as 0
+            in_stock = int(in_stock or 0)
+            allocated = int(allocated or 0)
+            retired = int(retired or 0)
+            
+            # Calculation: ((Allocated + Retired) / (Allocated + Retired + In-stock)) * 100
+            denominator = (allocated + retired + in_stock)
+            consumption = 0
+            if denominator > 0:
+                consumption = ((allocated + retired) / denominator) * 100
+            
+            summary.append({
+                "category": asset_type,
+                "in_stock": in_stock,
+                "allocated": allocated,
+                "retired": retired,
+                "total": total,
+                "consumption": round(consumption, 2)
+            })
+        return summary

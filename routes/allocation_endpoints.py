@@ -122,14 +122,9 @@ async def create_allocation(
         )
 
         # Update Asset status and allocation flag
-        try:
-            mod_by = int(allocation_in.modified_by) if allocation_in.modified_by else 1
-        except (ValueError, TypeError):
-            mod_by = 1
-
         await asset_repo.update_asset(
             asset.id,
-            modified_by=mod_by,
+            modified_by=allocation_in.modified_by or "System",
             is_allocated=True
         )
         allocation.emp_no = employee.emp_no
@@ -188,7 +183,7 @@ async def delete_allocation(
     if success:
         # Mark asset as Available again
         asset_repo = AssetRepository(db)
-        await asset_repo.update_asset(asset_id, modified_by=1, is_allocated=False, status='Available')
+        await asset_repo.update_asset(asset_id, modified_by="System", is_allocated=False, status='Available')
         return {"status": "success", "message": f"Allocation {allocation_id} deleted and asset released"}
     
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delete failed")

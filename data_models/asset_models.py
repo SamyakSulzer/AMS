@@ -99,3 +99,10 @@ class PaginatedAssetResponse(BaseModel):
     sort_by: Optional[str] = "id"
     order: Optional[str] = "asc"
     total_pages: int
+class AssetSummaryResponse(BaseModel):
+    category: str
+    in_stock: int
+    allocated: int
+    retired: int
+    total: int
+    consumption: float

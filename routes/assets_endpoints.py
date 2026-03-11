@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Path, Depends, UploadFile, File, Query
-from data_models.asset_models import Asset, UpdateAsset, CreateAsset, PaginatedAssetResponse
+from data_models.asset_models import Asset, UpdateAsset, CreateAsset, PaginatedAssetResponse, AssetSummaryResponse
 from typing import List, AsyncGenerator, Literal, Optional
 import pandas as pd
 import io
@@ -65,6 +65,11 @@ async def get_assets(
     repo = AssetRepository(db)
     assets = await repo.list_assets(skip=skip, limit=limit, sort_by=sort_by, order=order)
     return assets
+
+@router.get("/assets/summary", response_model=List[AssetSummaryResponse])
+async def get_asset_summary(db: AsyncSession = Depends(get_db)):
+    repo = AssetRepository(db)
+    return await repo.get_asset_summary_by_category()
 
 @router.get("/assets/{asset_id}", response_model=Asset)
 async def get_asset(

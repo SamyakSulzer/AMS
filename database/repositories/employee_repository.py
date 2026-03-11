@@ -148,3 +148,34 @@ class EmployeeRepository:
             await self.session.commit()
             await self.session.refresh(employee)
         return employee
+    async def count_incomplete_employees(self, user_name: str) -> int:
+        from sqlalchemy import or_
+        query = select(func.count()).select_from(Employee).where(
+            or_(Employee.created_by == user_name, Employee.modified_by == user_name)
+        ).where(
+            or_(
+                Employee.cn1.is_(None), Employee.cn1 == "",
+                Employee.email.is_(None), Employee.email == "",
+                Employee.sam_name.is_(None), Employee.sam_name == "",
+                Employee.division.is_(None), Employee.division == "",
+                Employee.location.is_(None), Employee.location == ""
+            )
+        )
+        result = await self.session.execute(query)
+        return result.scalar() or 0
+
+    async def get_incomplete_employees_emp_nos(self, user_name: str) -> list[str]:
+        from sqlalchemy import or_
+        query = select(Employee.emp_no).select_from(Employee).where(
+            or_(Employee.created_by == user_name, Employee.modified_by == user_name)
+        ).where(
+            or_(
+                Employee.cn1.is_(None), Employee.cn1 == "",
+                Employee.email.is_(None), Employee.email == "",
+                Employee.sam_name.is_(None), Employee.sam_name == "",
+                Employee.division.is_(None), Employee.division == "",
+                Employee.location.is_(None), Employee.location == ""
+            )
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())

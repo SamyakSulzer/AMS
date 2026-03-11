@@ -45,7 +45,7 @@ class MasterValue(BaseModel):
     is_active: bool = Field(..., description="Active status")
     is_deleted: bool = Field(..., description="Soft delete flag")
 
-# --- Paginated Responses ---
+# --- Paginated Responses 
 
 class PaginatedMasterKeyResponse(BaseModel):
     data: List[MasterKey]
