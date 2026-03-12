@@ -30,7 +30,7 @@ class Asset(Base):
     remarks: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_allocated: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    staging_status: Mapped[str | None] = mapped_column(String(50), nullable=True, default='not_staged')
+    staging_status: Mapped[str | None] = mapped_column(String(50), nullable=True, default='Not Staged')
     status: Mapped[str | None] = mapped_column(String(50), nullable=True, default='In-Stock')
 
     __table_args__ = (

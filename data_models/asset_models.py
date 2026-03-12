@@ -22,8 +22,8 @@ class CreateAsset(BaseModel):
     remarks: Optional[str] = Field(None, max_length=500, description="Additional remarks")
     is_allocated: bool = Field(default=False, description="Asset is Allocated")
     is_deleted: bool = Field(default=False, description="Asset is deleted")
-    staging_status: Optional[str] = Field('not_staged', max_length=50, description="Staging status")
-    status: Optional[Literal["In-Stock", "Available", "Retired"]] = Field('In-Stock', description="Current status of the asset")
+    staging_status: Optional[Literal["Not Staged", "Staged"]] = Field('Not Staged', description="Staging status")
+    status: Optional[Literal["In-Stock", "Allocated", "Retired"]] = Field('In-Stock', description="Current status of the asset")
 
     @field_validator('make')
     @classmethod
@@ -66,8 +66,8 @@ class Asset(BaseModel):
     remarks: Optional[str] = Field(None, max_length=500, description="Additional remarks")
     is_allocated: bool = Field(..., description="Asset is allocated")
     is_deleted: bool = Field(..., description="Asset is deleted")
-    staging_status: Optional[str] = Field(None, max_length=50, description="Staging status")
-    status: Optional[Literal["In-Stock", "Available", "Retired"]] = Field(None, description="Current status of the asset")
+    staging_status: Optional[Literal["Not Staged", "Staged"]] = Field(None, description="Staging status")
+    status: Optional[Literal["In-Stock", "Allocated", "Retired"]] = Field(None, description="Current status of the asset")
 
 class UpdateAsset(BaseModel):
     asset_type: Optional[str] = Field(None, max_length=50, description="Type of asset")
@@ -88,8 +88,8 @@ class UpdateAsset(BaseModel):
     is_allocated: Optional[bool] = Field(None, description="Asset is Allocated")
     is_deleted: Optional[bool] = Field(None, description="Asset is deleted")
     modified_by: Optional[str] = Field(None, description="Modifier user name")
-    staging_status: Optional[str] = Field(None, max_length=50, description="Staging status")
-    status: Optional[str] = Field(None, max_length=50, description="Current status of the asset")
+    staging_status: Optional[Literal["Not Staged", "Staged"]] = Field(None, description="Staging status")
+    status: Optional[Literal["In-Stock", "Allocated", "Retired"]] = Field(None, description="Current status of the asset")
 
 class PaginatedAssetResponse(BaseModel):
     data: List[Asset]

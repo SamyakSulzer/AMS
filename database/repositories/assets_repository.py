@@ -62,7 +62,7 @@ class AssetRepository:
         remarks: str | None = None,
         is_allocated: bool = False,
         is_deleted: bool = False,
-        staging_status: str | None = 'not_staged',
+        staging_status: str | None = 'Not Staged',
         status: str | None = 'In-Stock',
     ) -> "Asset":
         now = datetime.now(timezone.utc)

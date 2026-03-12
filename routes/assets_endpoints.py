@@ -203,6 +203,25 @@ async def upload_assets_csv(file: UploadFile = File(...), db: AsyncSession = Dep
                     if field in row_dict and row_dict[field] is not None:
                         if isinstance(row_dict[field], str):
                             row_dict[field] = row_dict[field].lower() in ('true', '1', 'yes')
+
+                # Normalize staging_status and status values
+                if row_dict.get('staging_status'):
+                    ss = str(row_dict['staging_status']).lower().replace('_', ' ')
+                    if ss == 'not staged' or ss == 'not_staged':
+                        row_dict['staging_status'] = 'Not Staged'
+                    elif ss == 'staged':
+                        row_dict['staging_status'] = 'Staged'
+                
+                if row_dict.get('status'):
+                    st = str(row_dict['status']).lower().replace('-', ' ')
+                    if st == 'in stock' or st == 'in-stock':
+                        row_dict['status'] = 'In-Stock'
+                    elif st == 'allocated':
+                        row_dict['status'] = 'Allocated'
+                    elif st == 'retired':
+                        row_dict['status'] = 'Retired'
+                    elif st == 'available': # Handle legacy 'Available' -> 'In-Stock'
+                        row_dict['status'] = 'In-Stock'
                 
                 # Use the existing CreateAsset model for validation
                 asset_data = CreateAsset(**row_dict)
