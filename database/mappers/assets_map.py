@@ -9,6 +9,7 @@ class Asset(Base):
     __tablename__ = "assets"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    assetno: Mapped[int] = mapped_column(Integer, nullable=False)
     asset_type: Mapped[str] = mapped_column(String(50), nullable=False)
     serial_num: Mapped[str] = mapped_column(String(100), nullable=False)
     host_name: Mapped[str | None] = mapped_column(String(100), nullable=True)

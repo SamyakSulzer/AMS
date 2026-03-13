@@ -1,6 +1,6 @@
 # database/repositories/asset_repository.py
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, String
 from datetime import datetime, timezone
 from database.mappers.assets_map import Asset
 from sqlalchemy import select, func
@@ -33,7 +33,8 @@ class AssetRepository:
                 Asset.location.ilike(f"%{search}%"),
                 Asset.mac_id.ilike(f"%{search}%"),
                 Asset.status.ilike(f"%{search}%"),
-                Asset.u_uid.ilike(f"%{search}%")
+                Asset.u_uid.ilike(f"%{search}%"),
+                func.cast(Asset.assetno, String).ilike(f"%{search}%")
             )
             query = query.where(search_filter)
             
@@ -43,6 +44,7 @@ class AssetRepository:
     
     async def add_asset(
         self,
+        assetno: int,
         asset_type: str,
         serial_num: str,
         lifecycle_status: str,
@@ -67,6 +69,7 @@ class AssetRepository:
     ) -> "Asset":
         now = datetime.now(timezone.utc)
         asset = Asset(
+            assetno=assetno,
             asset_type=asset_type,
             serial_num=serial_num,
             host_name=host_name,
@@ -149,7 +152,8 @@ class AssetRepository:
                 Asset.location.ilike(f"%{search}%"),
                 Asset.mac_id.ilike(f"%{search}%"),
                 Asset.status.ilike(f"%{search}%"),
-                Asset.u_uid.ilike(f"%{search}%")
+                Asset.u_uid.ilike(f"%{search}%"),
+                func.cast(Asset.assetno, String).ilike(f"%{search}%")
             )
             query = query.where(search_filter)
         
@@ -219,6 +223,24 @@ class AssetRepository:
         )
         result = await self.session.execute(query)
         return list(result.scalars().all())
+
+    async def count_expired_warranty_assets(self) -> int:
+        from datetime import date
+        today = date.today()
+        query = select(func.count()).select_from(Asset).where(
+            (Asset.warranty_end_date.is_not(None)) & (Asset.warranty_end_date < today) & (Asset.is_deleted == False)
+        )
+        result = await self.session.execute(query)
+        return result.scalar() or 0
+
+    async def get_expired_warranty_assets_hostnames(self) -> list[str]:
+        from datetime import date
+        today = date.today()
+        query = select(Asset.host_name).select_from(Asset).where(
+            (Asset.warranty_end_date.is_not(None)) & (Asset.warranty_end_date < today) & (Asset.is_deleted == False)
+        )
+        result = await self.session.execute(query)
+        return [row for row in result.scalars().all() if row] # Filter out None/empty hostnames
 
     async def get_asset_summary_by_category(self) -> list[dict]:
         from sqlalchemy import case

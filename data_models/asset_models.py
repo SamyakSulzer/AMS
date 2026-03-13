@@ -3,6 +3,7 @@ from typing import List, Optional, Literal
 from datetime import date, datetime
 
 class CreateAsset(BaseModel):
+    assetno: int = Field(..., description="Asset Number")
     asset_type: str = Field(..., max_length=50, description="Type of asset")
     serial_num: str = Field(..., max_length=100, description="Serial number of device")
     host_name: Optional[str] = Field(None, max_length=100, description="Stores system/host name")
@@ -45,6 +46,7 @@ class CreateAsset(BaseModel):
 class Asset(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int = Field(..., description="Unique row identifier for each asset")
+    assetno: int = Field(..., description="Asset Number")
     asset_type: str = Field(..., max_length=50, description="Type of asset")
     serial_num: str = Field(..., max_length=100, description="Serial number of device")
     host_name: Optional[str] = Field(None, max_length=100, description="Stores system/host name")
@@ -70,6 +72,7 @@ class Asset(BaseModel):
     status: Optional[Literal["In-Stock", "Allocated", "Retired"]] = Field(None, description="Current status of the asset")
 
 class UpdateAsset(BaseModel):
+    assetno: Optional[int] = Field(None, description="Asset Number")
     asset_type: Optional[str] = Field(None, max_length=50, description="Type of asset")
     serial_num: Optional[str] = Field(None, max_length=100, description="Serial number of device")
     host_name: Optional[str] = Field(None, max_length=100, description="Stores system/host name")

@@ -21,7 +21,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def get_assets(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    sort_by: Literal["asset_type", "location", "is_allocated", "status", "model", "host_name", "id", "serial_num", "staging_status", "company_name", "u_uid"] = "id",
+    sort_by: Literal["asset_type", "location", "is_allocated", "status", "model", "host_name", "id", "serial_num", "staging_status", "company_name", "u_uid", "assetno"] = "id",
     order: Literal["asc", "desc"] = "asc",
     search: Optional[str] = Query(None),
     asset_type: Optional[str] = Query(None),
@@ -87,6 +87,7 @@ async def create_asset(A: CreateAsset, db: AsyncSession = Depends(get_db)):
     repo = AssetRepository(db)
 
     asset = await repo.add_asset(
+        assetno=A.assetno,
         asset_type=A.asset_type,
         serial_num=A.serial_num,
         host_name=A.host_name,
@@ -178,6 +179,13 @@ async def upload_assets_csv(file: UploadFile = File(...), db: AsyncSession = Dep
                     'lifecycle_status', 'mac_id', 'company_name', 
                     'location', 'serial_num', 'remarks', 'u_uid', 'staging_status', 'status'
                 ]
+                # assetno is INT, so no need to put in string_fields.
+                # But we should ensure it's cast correctly if it comes as a string.
+                if 'assetno' in row_dict and row_dict['assetno'] is not None:
+                    try:
+                        row_dict['assetno'] = int(row_dict['assetno'])
+                    except:
+                        pass # Pydantic validation will catch it if it's invalid
                 for field in string_fields:
                     if field in row_dict and row_dict[field] is not None:
                         row_dict[field] = str(row_dict[field])
@@ -227,6 +235,7 @@ async def upload_assets_csv(file: UploadFile = File(...), db: AsyncSession = Dep
                 asset_data = CreateAsset(**row_dict)
                 
                 await repo.add_asset(
+                    assetno=asset_data.assetno,
                     asset_type=asset_data.asset_type,
                     serial_num=asset_data.serial_num,
                     host_name=asset_data.host_name,
